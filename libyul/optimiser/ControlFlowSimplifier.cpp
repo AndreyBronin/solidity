@@ -114,9 +114,49 @@ void ControlFlowSimplifier::operator()(Block& _block)
 	simplify(_block.statements);
 }
 
+void ControlFlowSimplifier::visit(Statement& _st)
+{
+	if (_st.type() == typeid(ForLoop))
+	{
+		ForLoop& forLoop = boost::get<ForLoop>(_st);
+		yulAssert(forLoop.pre.statements.empty(), "");
+
+		size_t outerBreak = m_numBreakStatements;
+		size_t outerContinue = m_numContinueStatements;
+		m_numBreakStatements = 0;
+		m_numContinueStatements = 0;
+
+		ASTModifier::visit(_st);
+
+		if (!forLoop.body.statements.empty())
+		{
+			bool isTerminating = false;
+			Statement& lastStatement = forLoop.body.statements.back();
+			// TODO also check for `stop`, `return`, etc.
+			if (lastStatement.type() == typeid(Break))
+			{
+				isTerminating = true;
+				--m_numBreakStatements;
+			}
+			if (isTerminating && m_numContinueStatements == 0 && m_numBreakStatements == 0)
+			{
+				If replacement{forLoop.location, std::move(forLoop.condition), std::move(forLoop.body)};
+				if (lastStatement.type() == typeid(Break))
+					replacement.body.statements.resize(replacement.body.statements.size() - 1);
+				_st = std::move(replacement);
+			}
+		}
+
+		m_numBreakStatements = outerBreak;
+		m_numContinueStatements = outerContinue;
+	}
+	else
+		ASTModifier::visit(_st);
+}
+
 void ControlFlowSimplifier::simplify(std::vector<yul::Statement>& _statements)
 {
-	GenericFallbackReturnsVisitor<OptionalStatements, If, Switch, ForLoop> const visitor(
+	GenericFallbackReturnsVisitor<OptionalStatements, If, Switch> const visitor(
 		[&](If& _ifStmt) -> OptionalStatements {
 			if (_ifStmt.body.statements.empty())
 			{
@@ -135,9 +175,6 @@ void ControlFlowSimplifier::simplify(std::vector<yul::Statement>& _statements)
 			else if (_switchStmt.cases.size() == 1)
 				return reduceSingleCaseSwitch(_switchStmt);
 
-			return {};
-		},
-		[&](ForLoop&) -> OptionalStatements {
 			return {};
 		}
 	);
