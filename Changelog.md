@@ -10,7 +10,7 @@ Compiler Features:
  * SMTChecker: Support ``delete``.
  * SMTChecker: Inline external function calls to ``this``.
  * Assembler: Encode the compiler version in the deployed bytecode.
- * Yul Optimizer: Simplify sigle-run ``for`` loops to ``if`` statements.
+ * Yul Optimizer: Simplify single-run ``for`` loops to ``if`` statements.
 
 
 Bugfixes:
