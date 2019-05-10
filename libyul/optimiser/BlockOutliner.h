@@ -31,7 +31,7 @@ namespace yul
 /**
  * Optimiser component that outlines blocks that occur multiple times.
  *
- * Prerequisite: Disambiguator and FunctionHoister
+ * Prerequisite: Disambiguator, FunctionHoister and FunctionGrouper
  *
  */
 class BlockOutliner: public ASTCopier
