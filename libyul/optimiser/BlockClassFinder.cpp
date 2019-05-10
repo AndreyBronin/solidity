@@ -150,18 +150,24 @@ void BlockClassFinder::operator()(FunctionDefinition const& _funDef)
 void BlockClassFinder::operator()(ForLoop const& _loop)
 {
 	hash(literalHash("ForLoop"));
+	++m_loopDepth;
 	ASTWalker::operator()(_loop);
+	--m_loopDepth;
 }
 
 void BlockClassFinder::operator()(Break const& _break)
 {
 	hash(literalHash("Break"));
+	if (!m_loopDepth)
+		m_hasFreeBreakOrContinue = true;
 	ASTWalker::operator()(_break);
 }
 
 void BlockClassFinder::operator()(Continue const& _continue)
 {
-	hash(literalHash("Break"));
+	hash(literalHash("Continue"));
+	if (!m_loopDepth)
+		m_hasFreeBreakOrContinue = true;
 	ASTWalker::operator()(_continue);
 }
 
@@ -169,10 +175,15 @@ void BlockClassFinder::operator()(Continue const& _continue)
 void BlockClassFinder::operator()(Block const& _block)
 {
 	hash(literalHash("Block"));
+	hash(_block.statements.size());
+	if (_block.statements.empty())
+		return;
+
 	BlockClassFinder subBlockClassFinder(m_globalState);
 	for (auto const& statement: _block.statements)
 		subBlockClassFinder.visit(statement);
 
+	// propagate sub block contents
 	hash(subBlockClassFinder.m_hash);
 	for (auto const& externalIdentifier: subBlockClassFinder.m_externalIdentifiers)
 		(*this)(Identifier{{}, externalIdentifier});
@@ -182,10 +193,11 @@ void BlockClassFinder::operator()(Block const& _block)
 	for (auto const& externalAssignment: subBlockClassFinder.m_externalReads)
 		if (isExternal(externalAssignment))
 			m_externalReads.insert(externalAssignment);
-
-	auto& candidateIDs = m_globalState.hashToBlockIDs[subBlockClassFinder.m_hash];
+	if (!m_loopDepth && subBlockClassFinder.m_hasFreeBreakOrContinue)
+		m_hasFreeBreakOrContinue = true;
 
 	// look for existing block class
+	auto& candidateIDs = m_globalState.hashToBlockIDs[subBlockClassFinder.m_hash];
 	for (auto const& candidateID: candidateIDs)
 	{
 		auto const& candidate = m_globalState.block(candidateID);
@@ -219,13 +231,14 @@ void BlockClassFinder::operator()(Block const& _block)
 	candidateIDs.emplace_back(GlobalState::BlockID{m_globalState.blockClasses.size(), 0});
 	m_globalState.blockToClassID[&_block] = m_globalState.blockClasses.size();
 	m_globalState.blockClasses.emplace_back(BlockClass{
-		make_vector<BlockClassMember>(
-		std::forward_as_tuple(
+		make_vector<BlockClassMember>(std::forward_as_tuple(
 			&_block,
 			std::move(subBlockClassFinder.m_externalIdentifiers),
 			std::move(subBlockClassFinder.m_externalAssignments),
 			std::move(subBlockClassFinder.m_externalReads)
-		)
-	), m_functionName});
+		)),
+		m_functionName,
+		subBlockClassFinder.m_hasFreeBreakOrContinue
+	});
 	m_functionName = {};
 }

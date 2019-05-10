@@ -29,6 +29,8 @@ using namespace yul;
 
 bool BlockOutliner::shallOutline(BlockClass const& _blockClass)
 {
+	if (_blockClass.hasFreeBreakOrContinue)
+		return false;
 	// TODO
 	return _blockClass.members.size() > 1;
 }

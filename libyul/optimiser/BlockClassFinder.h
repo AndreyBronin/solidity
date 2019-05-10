@@ -39,6 +39,7 @@ struct BlockClass
 {
 	std::vector<BlockClassMember> members;
 	YulString nameHint;
+	bool hasFreeBreakOrContinue = false;
 };
 
 /**
@@ -108,6 +109,8 @@ private:
 	size_t m_externalIdentifierCount = 0;
 	size_t m_internalIdentifierCount = 0;
 	bool m_isAssignmentLHS = false;
+	size_t m_loopDepth = 0;
+	bool m_hasFreeBreakOrContinue = false;
 	YulString m_functionName;
 };
 
