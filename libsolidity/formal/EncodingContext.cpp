@@ -39,6 +39,76 @@ void EncodingContext::reset()
 {
 	m_thisAddress->increaseIndex();
 	m_balances->increaseIndex();
+	resetVariables([&](VariableDeclaration const&) { return true; });
+}
+
+bool EncodingContext::knownVariable(VariableDeclaration const& _varDecl)
+{
+	return m_variables.count(&_varDecl);
+}
+
+shared_ptr<SymbolicVariable> EncodingContext::variable(VariableDeclaration const& _varDecl)
+{
+	solAssert(knownVariable(_varDecl), "");
+	return m_variables[&_varDecl];
+}
+
+bool EncodingContext::createVariable(VariableDeclaration const& _varDecl)
+{
+	solAssert(!knownVariable(_varDecl), "");
+	auto const& type = _varDecl.type();
+	auto result = newSymbolicVariable(*type, _varDecl.name() + "_" + to_string(_varDecl.id()), m_solver);
+	m_variables.emplace(&_varDecl, result.second);
+	return result.first;
+}
+
+void EncodingContext::resetVariable(VariableDeclaration const& _variable)
+{
+	newValue(_variable);
+	setUnknownValue(_variable);
+}
+
+void EncodingContext::resetVariables(set<VariableDeclaration const*> const& _variables)
+{
+	for (auto const* decl: _variables)
+		resetVariable(*decl);
+}
+
+void EncodingContext::resetVariables(function<bool(VariableDeclaration const&)> const& _filter)
+{
+	for_each(begin(m_variables), end(m_variables), [&](auto _variable)
+	{
+		if (_filter(*_variable.first))
+			this->resetVariable(*_variable.first);
+	});
+}
+
+smt::Expression EncodingContext::newValue(VariableDeclaration const& _decl)
+{
+	solAssert(knownVariable(_decl), "");
+	return m_variables.at(&_decl)->increaseIndex();
+}
+
+void EncodingContext::setZeroValue(VariableDeclaration const& _decl)
+{
+	solAssert(knownVariable(_decl), "");
+	setZeroValue(*m_variables.at(&_decl));
+}
+
+void EncodingContext::setZeroValue(SymbolicVariable& _variable)
+{
+	smt::setSymbolicZeroValue(_variable, m_solver);
+}
+
+void EncodingContext::setUnknownValue(VariableDeclaration const& _decl)
+{
+	solAssert(knownVariable(_decl), "");
+	setUnknownValue(*m_variables.at(&_decl));
+}
+
+void EncodingContext::setUnknownValue(SymbolicVariable& _variable)
+{
+	smt::setSymbolicUnknownValue(_variable, m_solver);
 }
 
 smt::Expression EncodingContext::thisAddress()

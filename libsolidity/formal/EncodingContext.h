@@ -20,6 +20,9 @@
 #include <libsolidity/formal/SolverInterface.h>
 #include <libsolidity/formal/SymbolicVariables.h>
 
+#include <unordered_map>
+#include <set>
+
 namespace dev
 {
 namespace solidity
@@ -38,6 +41,39 @@ public:
 	/// Resets the entire context.
 	void reset();
 
+	/// @returns true if variable was created.
+	bool knownVariable(VariableDeclaration const& _varDecl);
+
+	/// @returns the symbolic representation of a program variable.
+	std::shared_ptr<SymbolicVariable> variable(VariableDeclaration const& _varDecl);
+
+	/// @returns all symbolic variables.
+	std::unordered_map<VariableDeclaration const*, std::shared_ptr<SymbolicVariable>> const& variables() const { return m_variables; }
+
+	/// Creates a symbolic variable and
+	/// @returns true if a variable's type is not supported and is therefore abstract.
+	bool createVariable(VariableDeclaration const& _varDecl);
+
+	/// Resets a specific variable.
+	void resetVariable(VariableDeclaration const& _variable);
+
+	/// Resets a set of variables.
+	void resetVariables(std::set<VariableDeclaration const*> const& _variables);
+
+	/// Resets variables according to a predicate.
+	void resetVariables(std::function<bool(VariableDeclaration const&)> const& _filter);
+
+	/// Allocates a new index for the declaration, updates the current
+	/// index to this value and returns the expression.
+	smt::Expression newValue(VariableDeclaration const& _decl);
+
+	/// Sets the value of the declaration to zero.
+	void setZeroValue(VariableDeclaration const& _decl);
+	void setZeroValue(SymbolicVariable& _variable);
+	/// Resets the variable to an unknown value (in its range).
+	void setUnknownValue(VariableDeclaration const& decl);
+	void setUnknownValue(SymbolicVariable& _variable);
+
 	/// Value of `this` address.
 	smt::Expression thisAddress();
 
@@ -53,6 +89,9 @@ private:
 	void addBalance(smt::Expression _account, smt::Expression _value);
 
 	SolverInterface& m_solver;
+
+	/// Symbolic variables.
+	std::unordered_map<VariableDeclaration const*, std::shared_ptr<SymbolicVariable>> m_variables;
 
 	/// Symbolic `this` address.
 	std::unique_ptr<SymbolicAddressVariable> m_thisAddress;
