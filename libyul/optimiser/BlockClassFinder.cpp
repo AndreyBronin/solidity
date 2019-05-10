@@ -87,7 +87,8 @@ void BlockClassFinder::operator()(FunctionalInstruction const& _instr)
 {
 	hash(literalHash("FunctionalInstruction"));
 	hash(static_cast<std::underlying_type_t<eth::Instruction>>(_instr.instruction));
-	ASTWalker::operator()(_instr);
+	// Note that ASTWalker reverses the arguments.
+	walkVector(_instr.arguments);
 }
 
 void BlockClassFinder::operator()(FunctionCall const& _funCall)
@@ -95,7 +96,8 @@ void BlockClassFinder::operator()(FunctionCall const& _funCall)
 	hash(literalHash("FunctionCall"));
 	hash(_funCall.arguments.size());
 	hash(_funCall.functionName.name.hash());
-	ASTWalker::operator()(_funCall);
+	// Note that ASTWalker reverses the arguments.
+	walkVector(_funCall.arguments);
 }
 
 void BlockClassFinder::operator()(ExpressionStatement const& _statement)

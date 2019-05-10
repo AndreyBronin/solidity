@@ -58,18 +58,18 @@
 //         let b
 //         let c
 //         let d
-//         { a := g_1(a, b, c) }
+//         { a := g_1(a, c, b) }
 //         {
-//             if eq(1, 2) { d := g_1(d, b, a) }
+//             if eq(1, 2) { d := g_1(d, a, b) }
 //             { d := outlined$66$(d, a) }
 //         }
-//         { c := g_1(c, b, a) }
+//         { c := g_1(c, a, b) }
 //     }
 //     function g(x, y) -> z
-//     { z := g_1(z, y, x) }
+//     { z := g_1(z, x, y) }
 //     function f(a_1, b_2) -> r
 //     {
-//         { r := g_1(r, b_2, a_1) }
+//         { r := g_1(r, a_1, b_2) }
 //         r := g(b_2, a_1)
 //     }
 //     function h(a_3) -> r_4
@@ -82,7 +82,7 @@
 //         a := add(a, c)
 //         a_2 := a
 //     }
-//     function g_1(a, b, c) -> a_4
+//     function g_1(a, c, b) -> a_4
 //     {
 //         a := mul(c, b)
 //         if lt(a, c) { a := outlined$66$(a, c) }
