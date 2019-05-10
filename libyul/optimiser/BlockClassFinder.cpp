@@ -142,8 +142,8 @@ void BlockClassFinder::operator()(Switch const& _switch)
 
 void BlockClassFinder::operator()(FunctionDefinition const& _funDef)
 {
-	// TODO: It might be enough to visit the body only in a sub-BlockClassFinder.
 	hash(literalHash("FunctionDefinition"));
+	m_functionName = _funDef.name;
 	ASTWalker::operator()(_funDef);
 }
 
@@ -199,12 +199,17 @@ void BlockClassFinder::operator()(Block const& _block)
 			)
 			{
 				m_globalState.blockToClassID[&_block] = candidateID.blockClass;
-				m_globalState.blockClasses[candidateID.blockClass].emplace_back(BlockClassMember{
+				m_globalState.blockClasses[candidateID.blockClass].members.emplace_back(BlockClassMember{
 					&_block,
 					std::move(subBlockClassFinder.m_externalIdentifiers),
 					std::move(subBlockClassFinder.m_externalAssignments),
 					std::move(subBlockClassFinder.m_externalReads)
 				});
+				if (!m_functionName.empty())
+				{
+					m_globalState.blockClasses[candidateID.blockClass].nameHint = m_functionName;
+					m_functionName = {};
+				}
 				return;
 			}
 		}
@@ -213,12 +218,14 @@ void BlockClassFinder::operator()(Block const& _block)
 	// create new block class
 	candidateIDs.emplace_back(GlobalState::BlockID{m_globalState.blockClasses.size(), 0});
 	m_globalState.blockToClassID[&_block] = m_globalState.blockClasses.size();
-	m_globalState.blockClasses.emplace_back(make_vector<BlockClassMember>(
+	m_globalState.blockClasses.emplace_back(BlockClass{
+		make_vector<BlockClassMember>(
 		std::forward_as_tuple(
 			&_block,
 			std::move(subBlockClassFinder.m_externalIdentifiers),
 			std::move(subBlockClassFinder.m_externalAssignments),
 			std::move(subBlockClassFinder.m_externalReads)
 		)
-	));
+	), m_functionName});
+	m_functionName = {};
 }

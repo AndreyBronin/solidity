@@ -10,11 +10,11 @@
 // ----
 // {
 //     {
-//         { _1() }
-//         { _1() }
+//         { outlined$43$() }
+//         { outlined$43$() }
 //     }
 //     function f() -> x
 //     { x := 1 }
-//     function _1()
+//     function outlined$43$()
 //     { mstore(f(), 2) }
 // }

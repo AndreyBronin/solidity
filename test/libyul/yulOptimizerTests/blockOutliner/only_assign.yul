@@ -19,12 +19,12 @@
 //     let a
 //     let b
 //     let c
-//     { a := _1(c, b) }
-//     { b := _1(a, c) }
-//     { c := _1(b, a) }
-//     function _1(c, b) -> a_2
+//     { a := outlined$36$(c, b) }
+//     { b := outlined$36$(a, c) }
+//     { c := outlined$36$(b, a) }
+//     function outlined$36$(c, b) -> a_1
 //     {
 //         a := mul(b, c)
-//         a_2 := a
+//         a_1 := a
 //     }
 // }

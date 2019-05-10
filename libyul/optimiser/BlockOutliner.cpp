@@ -30,7 +30,7 @@ using namespace yul;
 bool BlockOutliner::shallOutline(BlockClass const& _blockClass)
 {
 	// TODO
-	return _blockClass.size() > 1;
+	return _blockClass.members.size() > 1;
 }
 
 void BlockOutliner::run(Block& _ast, NameDispenser& _nameDispenser)
@@ -44,10 +44,17 @@ void BlockOutliner::run(Block& _ast, NameDispenser& _nameDispenser)
 		if (!shallOutline(blockClass))
 			continue;
 
-		outlinedBlockClasses.emplace_back(&blockClass, _nameDispenser.newName({}));
+		YulString nameHint = blockClass.nameHint;
+		if (nameHint.empty())
+			nameHint = YulString(
+				"outlined$" +
+				to_string(blockClass.members.front().block->location.start) +
+				"$"
+			);
+		outlinedBlockClasses.emplace_back(&blockClass, _nameDispenser.newName(nameHint));
 
 		// generate a function call for each block in the class
-		for (auto const& block: blockClass)
+		for (auto const& block: blockClass.members)
 		{
 			auto loc = block.block->location;
 			vector<Expression> arguments;
@@ -101,17 +108,17 @@ FunctionDefinition BlockOutliner::blockClassToFunction(
 	YulString _functionName
 )
 {
-	yulAssert(!_blockClass.empty(), "");
-	Block const& _block = *_blockClass.front().block;
+	yulAssert(!_blockClass.members.empty(), "");
+	Block const& _block = *_blockClass.members.front().block;
 	Block body{_block.location, translateVector(_block.statements)};
 
 	TypedNameList parameters;
 	TypedNameList returnVariables;
-	for (auto const& name: _blockClass.front().externalReferences)
+	for (auto const& name: _blockClass.members.front().externalReferences)
 	{
-		if (_blockClass.front().externalReads.count(name))
+		if (_blockClass.members.front().externalReads.count(name))
 			parameters.emplace_back(TypedName{_block.location, name, {}});
-		if (_blockClass.front().externalAssignments.count(name))
+		if (_blockClass.members.front().externalAssignments.count(name))
 		{
 			returnVariables.emplace_back(TypedName{
 				_block.location,

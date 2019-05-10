@@ -35,7 +35,11 @@ struct BlockClassMember
 	std::set<YulString> externalReads;
 };
 
-using BlockClass = std::vector<BlockClassMember>;
+struct BlockClass
+{
+	std::vector<BlockClassMember> members;
+	YulString nameHint;
+};
 
 /**
  * Optimiser component that finds classes of equivalent blocks.
@@ -80,7 +84,7 @@ private:
 		std::vector<BlockClass> blockClasses;
 		BlockClassMember const& block(BlockID const& id)
 		{
-			return blockClasses.at(id.blockClass).at(id.indexInClass);
+			return blockClasses.at(id.blockClass).members.at(id.indexInClass);
 		}
 	};
 
@@ -104,6 +108,7 @@ private:
 	size_t m_externalIdentifierCount = 0;
 	size_t m_internalIdentifierCount = 0;
 	bool m_isAssignmentLHS = false;
+	YulString m_functionName;
 };
 
 
