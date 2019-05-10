@@ -56,7 +56,8 @@ void BlockOutliner::run(Block& _ast, NameDispenser& _nameDispenser)
 			{
 				if (block.externalAssignments.count(name))
 					identifiers.emplace_back(Identifier{loc, name});
-				arguments.emplace_back(Identifier{loc, name});
+				if (block.externalReads.count(name))
+					arguments.emplace_back(Identifier{loc, name});
 			}
 			FunctionCall call{
 				loc,
@@ -108,7 +109,8 @@ FunctionDefinition BlockOutliner::blockClassToFunction(
 	TypedNameList returnVariables;
 	for (auto const& name: _blockClass.front().externalReferences)
 	{
-		parameters.emplace_back(TypedName{_block.location, name, {}});
+		if (_blockClass.front().externalReads.count(name))
+			parameters.emplace_back(TypedName{_block.location, name, {}});
 		if (_blockClass.front().externalAssignments.count(name))
 		{
 			returnVariables.emplace_back(TypedName{

@@ -73,6 +73,13 @@ void BlockClassFinder::operator()(Identifier const& _identifier)
 	}
 	else
 		id = it->second;
+	if ((id & 1) == 0)
+	{
+		if (m_isAssignmentLHS)
+			m_externalAssignments.insert(_identifier.name);
+		else
+			m_externalReads.insert(_identifier.name);
+	}
 	hash(id);
 }
 
@@ -101,9 +108,11 @@ void BlockClassFinder::operator()(Assignment const& _assignment)
 {
 	hash(literalHash("Assignment"));
 	hash(_assignment.variableNames.size());
-	ASTWalker::operator()(_assignment);
-	for (auto const& variableName: _assignment.variableNames)
-		m_externalAssignments.insert(variableName.name);
+	m_isAssignmentLHS = true;
+	for (auto const& name: _assignment.variableNames)
+		(*this)(name);
+	m_isAssignmentLHS = false;
+	visit(*_assignment.value);
 }
 
 void BlockClassFinder::operator()(VariableDeclaration const& _varDecl)
@@ -170,6 +179,9 @@ void BlockClassFinder::operator()(Block const& _block)
 	for (auto const& externalAssignment: subBlockClassFinder.m_externalAssignments)
 		if (isExternal(externalAssignment))
 			m_externalAssignments.insert(externalAssignment);
+	for (auto const& externalAssignment: subBlockClassFinder.m_externalReads)
+		if (isExternal(externalAssignment))
+			m_externalReads.insert(externalAssignment);
 
 	auto& candidateIDs = m_globalState.hashToBlockIDs[subBlockClassFinder.m_hash];
 
@@ -190,7 +202,8 @@ void BlockClassFinder::operator()(Block const& _block)
 				m_globalState.blockClasses[candidateID.blockClass].emplace_back(BlockClassMember{
 					&_block,
 					std::move(subBlockClassFinder.m_externalIdentifiers),
-					std::move(subBlockClassFinder.m_externalAssignments)
+					std::move(subBlockClassFinder.m_externalAssignments),
+					std::move(subBlockClassFinder.m_externalReads)
 				});
 				return;
 			}
@@ -204,7 +217,8 @@ void BlockClassFinder::operator()(Block const& _block)
 		std::forward_as_tuple(
 			&_block,
 			std::move(subBlockClassFinder.m_externalIdentifiers),
-			std::move(subBlockClassFinder.m_externalAssignments)
+			std::move(subBlockClassFinder.m_externalAssignments),
+			std::move(subBlockClassFinder.m_externalReads)
 		)
 	));
 }

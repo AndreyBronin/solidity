@@ -32,6 +32,7 @@ struct BlockClassMember
 	Block const* block = nullptr;
 	std::vector<YulString> externalReferences;
 	std::set<YulString> externalAssignments;
+	std::set<YulString> externalReads;
 };
 
 using BlockClass = std::vector<BlockClassMember>;
@@ -99,8 +100,10 @@ private:
 	std::map<YulString, size_t> m_identifierMapping;
 	std::vector<YulString> m_externalIdentifiers;
 	std::set<YulString> m_externalAssignments;
+	std::set<YulString> m_externalReads;
 	size_t m_externalIdentifierCount = 0;
 	size_t m_internalIdentifierCount = 0;
+	bool m_isAssignmentLHS = false;
 };
 
 
